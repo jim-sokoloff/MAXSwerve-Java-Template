@@ -15,6 +15,8 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.ADIS16470_IMU.IMUAxis;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.DriveConstants;
 import frc.utils.SwerveUtils;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -53,6 +55,9 @@ public class DriveSubsystem extends SubsystemBase {
   private SlewRateLimiter m_rotLimiter = new SlewRateLimiter(DriveConstants.kRotationalSlewRate);
   private double m_prevTime = WPIUtilJNI.now() * 1e-6;
 
+  private final Field2d m_fieldSim = new Field2d();
+  private final Field2d m_fieldSim2 = new Field2d();
+
   // Odometry class for tracking robot pose
   SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
       DriveConstants.kDriveKinematics,
@@ -66,6 +71,8 @@ public class DriveSubsystem extends SubsystemBase {
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
+    SmartDashboard.putData("Field", m_fieldSim);
+    SmartDashboard.putData("Field2", m_fieldSim2);
   }
 
   @Override
@@ -79,6 +86,9 @@ public class DriveSubsystem extends SubsystemBase {
             m_rearLeft.getPosition(),
             m_rearRight.getPosition()
         });
+    m_fieldSim.setRobotPose(m_odometry.getPoseMeters());
+    //m_fieldSim.setRobotPose(1, 2, new Rotation2d(45));
+    m_fieldSim2.setRobotPose(1, 2, m_frontLeft.getPosition().angle);
   }
 
   /**
@@ -162,7 +172,9 @@ public class DriveSubsystem extends SubsystemBase {
       xSpeedCommanded = m_currentTranslationMag * Math.cos(m_currentTranslationDir);
       ySpeedCommanded = m_currentTranslationMag * Math.sin(m_currentTranslationDir);
       m_currentRotation = m_rotLimiter.calculate(rot);
-
+      SmartDashboard.putNumber("xSpeedCommanded", xSpeedCommanded);
+      SmartDashboard.putNumber("ySpeedCommanded", ySpeedCommanded);
+      SmartDashboard.putNumber("m_currentRotation", m_currentRotation);
 
     } else {
       xSpeedCommanded = xSpeed;
@@ -185,6 +197,19 @@ public class DriveSubsystem extends SubsystemBase {
     m_frontRight.setDesiredState(swerveModuleStates[1]);
     m_rearLeft.setDesiredState(swerveModuleStates[2]);
     m_rearRight.setDesiredState(swerveModuleStates[3]);
+    
+    double[] theoreticalStates = {
+      swerveModuleStates[0].angle.getDegrees(),
+      swerveModuleStates[0].speedMetersPerSecond,
+      swerveModuleStates[1].angle.getDegrees(),
+      swerveModuleStates[1].speedMetersPerSecond,
+      swerveModuleStates[2].angle.getDegrees(),
+      swerveModuleStates[2].speedMetersPerSecond,
+      swerveModuleStates[3].angle.getDegrees(),
+      swerveModuleStates[3].speedMetersPerSecond,
+    };
+
+    SmartDashboard.putNumberArray("Theoretical States", theoreticalStates);
   }
 
   /**
